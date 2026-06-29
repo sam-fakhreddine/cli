@@ -27,7 +27,7 @@ func TestInstallHooks_CreatesConfig(t *testing.T) {
 	ag := &CodexAgent{}
 	count, err := ag.InstallHooks(context.Background(), false, false)
 	require.NoError(t, err)
-	require.Equal(t, 4, count) // SessionStart, UserPromptSubmit, Stop, PostToolUse
+	require.Equal(t, 6, count) // SessionStart, UserPromptSubmit, Stop, PostToolUse, SubagentStart, SubagentStop
 
 	// Verify hooks.json was created in the repo
 	hooksPath := filepath.Join(tempDir, ".codex", HooksFileName)
@@ -41,6 +41,8 @@ func TestInstallHooks_CreatesConfig(t *testing.T) {
 	assertHookCommand(t, hooksFile.Hooks.UserPromptSubmit, agentpkg.WrapProductionSilentHookCommand("entire hooks codex user-prompt-submit"), "UserPromptSubmit")
 	assertHookCommand(t, hooksFile.Hooks.Stop, agentpkg.WrapProductionSilentHookCommand("entire hooks codex stop"), "Stop")
 	assertHookCommand(t, hooksFile.Hooks.PostToolUse, agentpkg.WrapProductionSilentHookCommand("entire hooks codex post-tool-use"), "PostToolUse")
+	assertHookCommand(t, hooksFile.Hooks.SubagentStart, agentpkg.WrapProductionSilentHookCommand("entire hooks codex subagent-start"), "SubagentStart")
+	assertHookCommand(t, hooksFile.Hooks.SubagentStop, agentpkg.WrapProductionSilentHookCommand("entire hooks codex subagent-stop"), "SubagentStop")
 
 	// Verify project-level config.toml enables the hooks feature (per-repo)
 	projectConfig := filepath.Join(tempDir, ".codex", configFileName)
@@ -59,7 +61,7 @@ func TestInstallHooks_Idempotent(t *testing.T) {
 
 	count1, err := ag.InstallHooks(context.Background(), false, false)
 	require.NoError(t, err)
-	require.Equal(t, 4, count1)
+	require.Equal(t, 6, count1)
 
 	count2, err := ag.InstallHooks(context.Background(), false, false)
 	require.NoError(t, err)
@@ -72,7 +74,7 @@ func TestInstallHooks_LocalDev(t *testing.T) {
 	ag := &CodexAgent{}
 	count, err := ag.InstallHooks(context.Background(), true, false)
 	require.NoError(t, err)
-	require.Equal(t, 4, count)
+	require.Equal(t, 6, count)
 
 	hooksPath := filepath.Join(tempDir, ".codex", HooksFileName)
 	data, err := os.ReadFile(hooksPath)
@@ -91,7 +93,7 @@ func TestInstallHooks_Force(t *testing.T) {
 
 	count, err := ag.InstallHooks(context.Background(), false, true)
 	require.NoError(t, err)
-	require.Equal(t, 4, count)
+	require.Equal(t, 6, count)
 }
 
 func TestUninstallHooks(t *testing.T) {

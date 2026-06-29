@@ -207,6 +207,18 @@ func AsSubagentAwareExtractor(ag Agent) (SubagentAwareExtractor, bool) {
 	return sae, true
 }
 
+// AsSubagentTranscriptResolver returns the agent as SubagentTranscriptResolver if
+// it implements the interface. Built-in only: it customizes where the lifecycle
+// looks for a subagent transcript, with no external-protocol equivalent, so it
+// resolves by type assertion alone with no DeclaredCaps gate.
+func AsSubagentTranscriptResolver(ag Agent) (SubagentTranscriptResolver, bool) {
+	if ag == nil {
+		return nil, false
+	}
+	r, ok := ag.(SubagentTranscriptResolver)
+	return r, ok
+}
+
 // AsSkillEventExtractor returns the agent as SkillEventExtractor if it implements
 // the interface. Skill-event extraction is currently built-in only; external
 // agents do not expose this optional interface through declared capabilities.
