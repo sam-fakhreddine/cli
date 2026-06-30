@@ -427,6 +427,12 @@ func (s *treeWriter) applyTranscriptBackfill(ctx context.Context, opts UpdateOpt
 		}
 	}
 
+	if len(opts.Subagents) > 0 {
+		if err := s.replaceSubagents(opts.Subagents, sessionPath, entries); err != nil {
+			return plumbing.ZeroHash, fmt.Errorf("failed to replace subagents: %w", err)
+		}
+	}
+
 	return s.buildCheckpointSubtree(ctx, entries, basePath)
 }
 
@@ -702,6 +708,7 @@ func (s *treeWriter) writeSessionToSubdirectory(ctx context.Context, opts WriteO
 		TokenUsage:                  opts.TokenUsage,
 		SkillEventsVersion:          skillEventsVersion(opts.SkillEvents),
 		SkillEvents:                 opts.SkillEvents,
+		Subagents:                   opts.Subagents,
 		SessionMetrics:              opts.SessionMetrics,
 		Attribution:                 opts.Attribution,
 		PromptAttributions:          opts.PromptAttributionsJSON,
@@ -1739,6 +1746,39 @@ func (s *treeWriter) replaceSkillEvents(skillEvents []agent.SkillEvent, sessionP
 	}
 	metadata.SkillEventsVersion = skillEventsVersion(skillEvents)
 	metadata.SkillEvents = skillEvents
+
+	metadataJSON, err := jsonutil.MarshalIndentWithNewline(metadata, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal session metadata: %w", err)
+	}
+	metadataHash, err := CreateBlobFromContent(s.repo, metadataJSON)
+	if err != nil {
+		return err
+	}
+	entries[metadataPath] = object.TreeEntry{
+		Name: metadataPath,
+		Mode: filemode.Regular,
+		Hash: metadataHash,
+	}
+	return nil
+}
+
+// replaceSubagents rewrites the session metadata's subagents list in place.
+// Used by the turn-end finalize update so a subagent recorded after the last
+// condensation is still published to the turn's checkpoints. Mirrors
+// replaceSkillEvents.
+func (s *treeWriter) replaceSubagents(subagents []SubagentLink, sessionPath string, entries map[string]object.TreeEntry) error {
+	metadataPath := sessionPath + paths.MetadataFileName
+	entry, exists := entries[metadataPath]
+	if !exists {
+		return fmt.Errorf("session metadata not found at %s", metadataPath)
+	}
+
+	metadata, err := s.readMetadataFromBlob(entry.Hash)
+	if err != nil {
+		return fmt.Errorf("read session metadata: %w", err)
+	}
+	metadata.Subagents = subagents
 
 	metadataJSON, err := jsonutil.MarshalIndentWithNewline(metadata, "", "  ")
 	if err != nil {

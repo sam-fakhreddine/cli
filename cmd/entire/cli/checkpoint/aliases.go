@@ -23,6 +23,7 @@ type (
 	SessionContent   = apicheckpoint.SessionContent
 	SessionFilePaths = apicheckpoint.SessionFilePaths
 	SessionMetrics   = apicheckpoint.SessionMetrics
+	SubagentLink     = apicheckpoint.SubagentLink
 	Summary          = apicheckpoint.Summary
 	LearningsSummary = apicheckpoint.LearningsSummary
 	CodeLearning     = apicheckpoint.CodeLearning
