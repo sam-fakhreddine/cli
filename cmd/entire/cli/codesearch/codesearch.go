@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/entireio/cli/cmd/entire/cli/api"
 )
@@ -71,6 +72,9 @@ func Search(ctx context.Context, client *api.Client, req SearchRequest) (*Search
 		params.Set("max_results", strconv.Itoa(req.MaxResults))
 	}
 	if req.CaseSensitive {
+		// ponytail: peregrine's proto does not yet define case_sensitive;
+		// the param is sent optimistically so it takes effect once
+		// peregrine adds support without a CLI release.
 		params.Set("case_sensitive", "true")
 	}
 	for _, r := range req.Repos {
@@ -101,7 +105,7 @@ func Search(ctx context.Context, client *api.Client, req SearchRequest) (*Search
 			}
 		}
 		if apiErr.Message == "" && len(body) > 0 {
-			apiErr.Message = string(body)
+			apiErr.Message = strings.TrimSpace(string(body))
 		}
 		return nil, fmt.Errorf("code search: %w", apiErr)
 	}

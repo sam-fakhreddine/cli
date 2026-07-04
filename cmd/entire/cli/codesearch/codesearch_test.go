@@ -108,7 +108,7 @@ func TestSearch_NonJSONError(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("Bad Gateway")) //nolint:errcheck // test handler
+		w.Write([]byte("  Bad Gateway\n")) //nolint:errcheck // test handler — trailing whitespace exercises TrimSpace
 	}))
 	defer srv.Close()
 
@@ -116,6 +116,15 @@ func TestSearch_NonJSONError(t *testing.T) {
 	_, err := Search(context.Background(), client, SearchRequest{Query: "test"})
 	if err == nil {
 		t.Fatal("Search() expected error, got nil")
+	}
+	// Body text should surface (trimmed) in the error message.
+	if !strings.Contains(err.Error(), "Bad Gateway") {
+		t.Errorf("error = %q, want containing 'Bad Gateway'", err.Error())
+	}
+	// Should wrap *api.HTTPError with the correct status code.
+	var httpErr *api.HTTPError
+	if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusBadGateway {
+		t.Errorf("expected HTTPError with status 502, got %v", err)
 	}
 }
 
