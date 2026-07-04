@@ -433,7 +433,6 @@ func runCodeSearch(ctx context.Context, cmd *cobra.Command, opts codeSearchOpts)
 // each cell independently. The jurisdiction is kept for token minting.
 type cellGroup struct {
 	cell         string   // cell identifier from RepoIndexEntry.Cell (grouping key, matches BFF)
-	clusterSlug  string   // RepoIndexEntry.ClusterSlug — the natural key for Cluster.Slug lookup
 	jurisdiction string   // used for jurisdictional token exchange
 	baseURL      string   // cell's apiUrl from the cluster catalog (empty → home-cell fallback)
 	repoIDs      []string // repo ULIDs that belong to this cell (set when filtering)
@@ -505,7 +504,7 @@ func searchAllCells(ctx context.Context, opts codeSearchOpts) (*codesearch.Searc
 			slugToCluster[strings.ToLower(cl.Slug)] = cl
 		}
 		for i := range cells {
-			if cl, ok := slugToCluster[cells[i].clusterSlug]; ok {
+			if cl, ok := slugToCluster[cells[i].cell]; ok {
 				cells[i].baseURL = strings.TrimRight(strings.TrimSpace(cl.ApiUrl.Or("")), "/")
 			}
 		}
@@ -552,7 +551,6 @@ func groupReposByCell(repos []coreapi.RepoIndexEntry) []cellGroup {
 		j := strings.ToLower(strings.TrimSpace(r.Jurisdiction))
 		groups = append(groups, cellGroup{
 			cell:         cell,
-			clusterSlug:  strings.ToLower(strings.TrimSpace(r.ClusterSlug)),
 			jurisdiction: j,
 			repoIDs:      []string{r.ID},
 		})

@@ -253,10 +253,10 @@ func TestGroupReposByCell(t *testing.T) {
 	t.Parallel()
 
 	repos := []coreapi.RepoIndexEntry{
-		{Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
-		{Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/api"},
-		{Cell: testCellEU, ClusterSlug: testCellEU, Jurisdiction: "eu", FullName: "acme/docs"},
-		{Cell: "", ClusterSlug: "", Jurisdiction: "", FullName: "acme/empty"},
+		{Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
+		{Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/api"},
+		{Cell: testCellEU, Jurisdiction: "eu", FullName: "acme/docs"},
+		{Cell: "", Jurisdiction: "", FullName: "acme/empty"},
 	}
 
 	groups := groupReposByCell(repos)
@@ -279,13 +279,6 @@ func TestGroupReposByCell(t *testing.T) {
 	if _, ok := cellMap[""]; !ok {
 		t.Error("missing home cell (empty string) for repos without placement")
 	}
-	// clusterSlug should be stored from RepoIndexEntry.ClusterSlug, not Cell.
-	if g := cellMap["aws-us-east-2"]; g.clusterSlug != "aws-us-east-2" {
-		t.Errorf("clusterSlug = %q, want aws-us-east-2", g.clusterSlug)
-	}
-	if g := cellMap[testCellEU]; g.clusterSlug != testCellEU {
-		t.Errorf("clusterSlug = %q, want %s", g.clusterSlug, testCellEU)
-	}
 }
 
 func TestGroupReposByCell_SeparatesCellsInSameJurisdiction(t *testing.T) {
@@ -294,8 +287,8 @@ func TestGroupReposByCell_SeparatesCellsInSameJurisdiction(t *testing.T) {
 	// Two different cells in the same jurisdiction should produce two groups
 	// (one per cell, matching the BFF pattern).
 	repos := []coreapi.RepoIndexEntry{
-		{Cell: "aws-us-east-1", ClusterSlug: "aws-us-east-1", Jurisdiction: "us", FullName: "acme/web"},
-		{Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/api"},
+		{Cell: "aws-us-east-1", Jurisdiction: "us", FullName: "acme/web"},
+		{Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/api"},
 	}
 
 	groups := groupReposByCell(repos)
@@ -315,8 +308,8 @@ func TestGroupReposByCell_DeduplicatesSameCell(t *testing.T) {
 	t.Parallel()
 
 	repos := []coreapi.RepoIndexEntry{
-		{Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
-		{Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/api"},
+		{Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
+		{Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/api"},
 	}
 
 	groups := groupReposByCell(repos)
@@ -832,8 +825,8 @@ func TestSearchAllCells_GroupsByCell(t *testing.T) {
 	restore := setTestCoreClient(t, &fakeCoreClient{
 		repos: &coreapi.ListReposOutputBody{
 			Repos: []coreapi.RepoIndexEntry{
-				{ID: "r1", Cell: "aws-us-east-1", ClusterSlug: "aws-us-east-1", Jurisdiction: "us", FullName: "acme/web"},
-				{ID: "r2", Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/api"},
+				{ID: "r1", Cell: "aws-us-east-1", Jurisdiction: "us", FullName: "acme/web"},
+				{ID: "r2", Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/api"},
 			},
 		},
 		clusters: &coreapi.ListClustersOutputBody{
@@ -896,12 +889,10 @@ func TestSearchAllCells_GroupsByCell(t *testing.T) {
 }
 
 func TestSearchAllCells_ResolvesBaseURLFromClusters(t *testing.T) {
-	// Cell and ClusterSlug intentionally differ to prove the cluster catalog
-	// lookup uses ClusterSlug (not Cell) — matching the BFF pattern.
 	restore := setTestCoreClient(t, &fakeCoreClient{
 		repos: &coreapi.ListReposOutputBody{
 			Repos: []coreapi.RepoIndexEntry{
-				{ID: "r1", Cell: "eu-cell-1", ClusterSlug: testCellEU, Jurisdiction: "eu", FullName: "acme/docs"},
+				{ID: "r1", Cell: testCellEU, Jurisdiction: "eu", FullName: "acme/docs"},
 			},
 		},
 		clusters: &coreapi.ListClustersOutputBody{
@@ -934,8 +925,8 @@ func TestSearchAllCells_PartialCellFailure(t *testing.T) {
 	restore := setTestCoreClient(t, &fakeCoreClient{
 		repos: &coreapi.ListReposOutputBody{
 			Repos: []coreapi.RepoIndexEntry{
-				{ID: "r1", Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
-				{ID: "r2", Cell: testCellEU, ClusterSlug: testCellEU, Jurisdiction: "eu", FullName: "acme/docs"},
+				{ID: "r1", Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
+				{ID: "r2", Cell: testCellEU, Jurisdiction: "eu", FullName: "acme/docs"},
 			},
 		},
 	})
@@ -971,7 +962,7 @@ func TestSearchAllCells_RepoFilterNoMatch(t *testing.T) {
 	restore := setTestCoreClient(t, &fakeCoreClient{
 		repos: &coreapi.ListReposOutputBody{
 			Repos: []coreapi.RepoIndexEntry{
-				{ID: "r1", Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
+				{ID: "r1", Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
 			},
 		},
 	})
@@ -995,7 +986,7 @@ func TestSearchAllCells_SingleCellStillMerges(t *testing.T) {
 	restore := setTestCoreClient(t, &fakeCoreClient{
 		repos: &coreapi.ListReposOutputBody{
 			Repos: []coreapi.RepoIndexEntry{
-				{ID: "r1", Cell: "aws-us-east-2", ClusterSlug: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
+				{ID: "r1", Cell: "aws-us-east-2", Jurisdiction: "us", FullName: "acme/web"},
 			},
 		},
 	})
