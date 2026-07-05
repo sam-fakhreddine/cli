@@ -16,7 +16,7 @@ import (
 
 // currentRepoIDTimeout bounds currentRepoID's control-plane lookup. The lookup
 // is best-effort decoration (recap degrades to personal-only without it), so a
-// stalled core must not hang the command — mirror expertsCellResolveTimeout.
+// stalled core must not hang the command — mirror cellResolveTimeout.
 const currentRepoIDTimeout = 5 * time.Second
 
 // runAuthenticatedActivityAPI runs fn with an authenticated client for the
